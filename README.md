@@ -12,7 +12,7 @@ is partially occluded, leaving the frame, or changing appearance rapidly.
 
 ## Demo
 
-[Screen recording of the tracker running](examples/cft-demo.mov)
+[Screen recording of the tracker running](examples/cftTrackDemo.mp4)
 
 ---
 
