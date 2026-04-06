@@ -10,6 +10,12 @@ is partially occluded, leaving the frame, or changing appearance rapidly.
 
 ---
 
+## Demo
+
+[Screen recording of the tracker running](examples/cft-demo.mov)
+
+---
+
 ## Highlights
 - Two-filter MOSSE tracker that keeps a stable long-term model while adapting quickly with a short-term model.
 - Works in both C++ (`main.cpp`) and Python (`main.py`) through a shared pybind11 module (`cft_tracker`).
@@ -26,6 +32,7 @@ is partially occluded, leaving the frame, or changing appearance rapidly.
 | `CFT_Track.hpp/cpp` | Core tracker implementation (learning, PSR logic, FFT helpers). |
 | `TrackID.hpp/cpp` | Track state container (bounding boxes, masking/cropping helpers, filter storage). |
 | `bindings.cpp` | pybind11 bindings that expose `CFT` and `Track` to Python. |
+| `examples/` | Demo assets, including a screen recording of the tracker. |
 | `main.cpp` | Minimal C++ demo that runs the tracker on a webcam feed. |
 | `main.py` | Python counterpart using the same tracker logic. |
 | `setup.py` | Build script for the `cft_tracker` Python extension module. |
