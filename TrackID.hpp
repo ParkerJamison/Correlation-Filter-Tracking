@@ -35,7 +35,7 @@ class Track : public CFT {
             Hi.release();
         }
 
-        void initBBox(cv::Mat frame);
+        void initBBox(cv::Mat frame, cv::Rect initBBOX);
         void updateBBox(int dx, int dy, cv::Rect bounds);
 
         inline cv::Rect getBBox() const {return this->bbox;}

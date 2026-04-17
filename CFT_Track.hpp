@@ -28,6 +28,7 @@ class CFT {
         };
 
         Track initTracking(cv::Mat frame);
+        Track initTracking(cv::Mat frame, cv::Rect initBBOX);
         int updateTracking(cv::Mat frame, Track &track);
 };
 

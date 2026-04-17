@@ -1,16 +1,19 @@
 #include "TrackID.hpp"
+#include <stdexcept>
 
 using namespace cv;
 using namespace std;
 
-void Track::initBBox(cv::Mat frame) {
+void Track::initBBox(cv::Mat frame, cv::Rect initBBOX) {
 
     int rows = frame.rows;
     int cols = frame.cols;
     this->imageBounds = Rect(0, 0, cols, rows);
 
-    bool fromCenter = false;
-    this->bbox = selectROI(frame);
+    this->bbox = initBBOX & this->imageBounds;
+    if (this->bbox.width <= 0 || this->bbox.height <= 0) {
+        throw runtime_error("Initial bounding box must overlap the frame");
+    }
     this->displayBbox = this->bbox;
 
     int optimalRows = getOptimalDFTSize(this->bbox.height);
@@ -23,6 +26,8 @@ void Track::initBBox(cv::Mat frame) {
     this->searchArea.width = optimalCols;
     this->searchArea.height = optimalRows;
 
+    A.clear();
+    B.clear();
     for(int i = 0; i < 2; i++) {
         A.push_back(Mat(optimalRows, optimalCols, CV_64F));
         B.push_back(Mat(optimalRows, optimalCols, CV_64F));
@@ -89,7 +94,6 @@ void Track::updateFilter(double lr, bool lt) {
         B[1] = ((1-lr) * B[1]) + ((lr) * tmp2);
     }
 }
-
 
 
 

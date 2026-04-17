@@ -1,6 +1,8 @@
 #include "CFT_Track.hpp"
 #include "TrackID.hpp"
+#include <iostream>
 #include <random>
+#include <stdexcept>
 #include <vector>
 
 using namespace cv;
@@ -84,7 +86,6 @@ Mat randomWarp(Mat img) {
     return warped;
 }
 
-
 void trainFilter(cv::Mat initFrame, cv::Mat& G, vector<Mat>& A, vector<Mat>& B,
                     int numTrain, double lr) {
     /* 
@@ -126,9 +127,15 @@ void trainFilter(cv::Mat initFrame, cv::Mat& G, vector<Mat>& A, vector<Mat>& B,
 }
     
 Track CFT::initTracking(Mat frame) {
+    Rect initBBOX = selectROI("Tracker ROI", frame, false, false);
+    destroyWindow("Tracker ROI");
+    return this->initTracking(frame, initBBOX);
+}
+
+Track CFT::initTracking(Mat frame, Rect initBBOX) {
 
     Track track;
-    track.initBBox(frame);
+    track.initBBox(frame, initBBOX);
     
     Mat grayFrame;
     cvtColor(frame, grayFrame, COLOR_BGR2GRAY);
@@ -139,10 +146,9 @@ Track CFT::initTracking(Mat frame) {
     //preProcess(response, window);
     
     track.G = track.cropForSearch(response);
-    track.fi = track.cropForROI(grayFrame);
+    track.fi = track.cropForSearch(grayFrame);
 
     fft2d(track.G);
-    resize(track.fi, track.fi, track.G.size());
 
     trainFilter(track.fi, track.G, track.A, track.B, this->numTrain, this->lr);
 
@@ -150,6 +156,11 @@ Track CFT::initTracking(Mat frame) {
 }
 
 int CFT::updateTracking(cv::Mat frame, Track &track) {
+
+    // 0 = good track
+    // 1 = bad track
+    int retVal = 0;
+
     double maxVal;
     Point maxLoc;
 
@@ -158,8 +169,8 @@ int CFT::updateTracking(cv::Mat frame, Track &track) {
     int dy = 0;
 
     // change later
-    cout << (track.G.rows) << "::" << (track.G.cols) << endl;
-    Mat window = hanningWindow((track.G.rows), (track.G.cols));   
+    // cout << (track.G.rows) << "::" << (track.G.cols) << endl;
+    Mat window = hanningWindow((track.G.rows), (track.G.cols));
     Mat mask = Mat::ones(track.Gi.size(), CV_8U);
 
     cvtColor(frame, frame, COLOR_BGR2GRAY);
@@ -179,8 +190,8 @@ int CFT::updateTracking(cv::Mat frame, Track &track) {
 
         minMaxLoc(track.Gi, NULL, &maxVal, NULL, &maxLoc);
 
-        Rect peakWindow = Rect(maxLoc.x - 10, maxLoc.y - 10, 11, 11);
-        peakWindow &= track.getSearchArea();
+        Rect peakWindow = Rect(maxLoc.x - 10, maxLoc.y - 10, 21, 21);
+        peakWindow &= Rect(0, 0, mask.cols, mask.rows);
 
         mask(peakWindow) = 0;
         Scalar m, sd;
@@ -188,7 +199,7 @@ int CFT::updateTracking(cv::Mat frame, Track &track) {
         mask(peakWindow) = 1;
 
         double tmpPsr = (maxVal - m[0]) / sd[0];
-        cout << "PSR::::::" << tmpPsr << endl;
+        //cout << "PSR::::::" << tmpPsr << endl;
         if (tmpPsr > psr) {
             psr = tmpPsr;
             dx = int(maxLoc.x - track.Gi.cols / 2);
@@ -198,23 +209,30 @@ int CFT::updateTracking(cv::Mat frame, Track &track) {
 
     track.updateBBox(dx, dy, track.getImageBounds());
 
+    if ((!track.psrFlag) || (psr > 10)) {
+        track.fi = track.cropForSearch(frame);
+        preProcess(track.fi, window);
+        fft2d(track.fi);
+    }
+
     if (!track.psrFlag) {
             track.updateFilter(this->lr, false);
             track.updateFilter(this->lr, true);
             if (psr > 13) track.psrFlag = true;
         }
     else {
-        if ((psr > 6) && (psr < 20)) 
+        if ((psr > 10) && (psr < 20)) 
             track.updateFilter(this->lr, false);
         else if (psr >= 20) {
             track.updateFilter(this->lr, true);
         }
         else {
+            retVal = 1;
             cout << "PSR too low to update" << endl;
         }
 
     }
-    return 0;
+    return retVal;
 }
 
 //Track CFT::tttf(Mat frame) {
@@ -228,6 +246,3 @@ int CFT::updateTracking(cv::Mat frame, Track &track) {
 //    // transistion between tracking buffer and real time?
 //    
 //}
-
-
-

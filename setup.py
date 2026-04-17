@@ -31,7 +31,7 @@ ext_modules = [
         library_dirs=opencv_flags.get('library_dirs', []),
         libraries=opencv_flags.get('libraries', []),
         language='c++',
-        extra_compile_args=['-std=c++11'],  # Or higher if needed
+        extra_compile_args=['-std=c++17'],
     ),
 ]
 
